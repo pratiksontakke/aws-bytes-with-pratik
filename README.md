@@ -58,7 +58,7 @@ terraform destroy
 ## 📧 Contact
 
 - YouTube: [Pratik Sontakke Tech](https://www.youtube.com/@PratikSontakkeTech)
-- LinkedIn: [Pratik Sontakke](https://www.linkedin.com/in/pratiksontakke)
+- LinkedIn: [Pratik Sontakke](https://www.linkedin.com/in/pratik-sontakke/)
 - Twitter: [@pratiksontakke](https://twitter.com/pratiksontakke)
 
 ---
