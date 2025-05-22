@@ -74,7 +74,7 @@ resource "aws_instance" "my_first_server" {
               yum install -y httpd
               systemctl start httpd
               systemctl enable httpd
-              echo "<h1>Hello from Pratik Sontakke Tech on EC2! Instance Type: $(curl -s http://169.254.169.254/latest/meta-data/instance-type)</h1>" > /var/www/html/index.html
+              echo "<h1>Hello from Pratik Sontakke Tech on EC2!</h1>" > /var/www/html/index.html
               EOF
 }
 
