@@ -1,69 +1,101 @@
+# main.tf
+
 provider "aws" {
   region = "ap-south-1" # Mumbai Region
 }
 
-# 1. Create an S3 Bucket (Your "Digital Locker")
-resource "aws_s3_bucket" "my_digital_locker" {
-  # Bucket names must be globally unique
-  bucket = "pratik-digital-locker-demo-${random_id.bucket_suffix.hex}" # Append random string for uniqueness
+# For storing the DB password securely (recommended for actual use)
+# resource "random_password" "db_password" {
+#   length           = 16
+#   special          = true
+#   override_special = "_%@"
+# }
 
-  # ACL (Access Control List) - "private" means only owner can access by default.
-  # For more granular control, Bucket Policies and IAM are preferred over ACLs for new buckets.
-  # acl = "private" # This is often the default, but explicit can be good.
-  # Modern best practice is to use aws_s3_bucket_public_access_block
+# For demo simplicity, we might hardcode or use a variable.
+# In a real scenario, consider AWS Secrets Manager.
+
+# Assuming you have a default VPC or existing VPC and subnets.
+# For RDS, you often need a DB Subnet Group.
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "swadisht-sweets-subnet-group"
+  subnet_ids = data.aws_subnets.default.ids # Using default VPC subnets for simplicity
 
   tags = {
-    Name  = "MyDigitalLocker-Pratik"
+    Name = "SwadishtSweets-SubnetGroup"
+  }
+}
+
+# Security Group for RDS instance
+resource "aws_security_group" "rds_sg" {
+  name        = "swadisht-sweets-rds-sg"
+  description = "Allow DB traffic"
+  vpc_id      = data.aws_vpc.default.id # Using default VPC
+
+  # Ingress rule to allow traffic from your IP (replace with actual IP/range)
+  # Or from an EC2 instance's security group if your app server is in EC2
+  ingress {
+    from_port   = 3306 # MySQL port
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # WARNING: For demo only. Restrict to your IP/SG in production!
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "SwadishtSweets-RDSSG"
+  }
+}
+
+# Create an RDS Instance for "Swadisht Sweets"
+resource "aws_db_instance" "swadisht_sweets_db" {
+  identifier             = "swadisht-sweets-db-tf"
+  allocated_storage      = 20 # In GB
+  storage_type           = "gp2"
+  engine                 = "mysql"
+  engine_version         = "8.0" # Check for latest supported versions
+  instance_class         = "db.t3.micro" # Free tier eligible (check current eligibility)
+  username               = "mrsharma"
+  password               = "pratik@123" # REPLACE with a strong password or use random_password.value
+  # parameter_group_name = "default.mysql8.0" # Or a custom one
+  db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+
+  skip_final_snapshot    = true # For demo, set to false for production
+  publicly_accessible  = true # For demo to connect easily. Set to false for production.
+  # multi_az             = false # For Dev/Test. Set to true for Production for High Availability.
+
+  tags = {
+    Name  = "SwadishtSweetsDB-Terraform"
     Owner = "Pratik Sontakke Tech"
+    App   = "Swadisht Sweets Online"
   }
 }
 
-# Resource to generate a random suffix for the bucket name to help ensure uniqueness
-resource "random_id" "bucket_suffix" {
-  byte_length = 4
+output "rds_instance_endpoint" {
+  description = "The connection endpoint for the RDS instance"
+  value       = aws_db_instance.swadisht_sweets_db.endpoint
 }
 
-# 2. Block Public Access settings for the S3 Bucket (Recommended for most use cases)
-resource "aws_s3_bucket_public_access_block" "locker_public_access_block" {
-  bucket = aws_s3_bucket.my_digital_locker.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+output "rds_instance_port" {
+  description = "The port for the RDS instance"
+  value       = aws_db_instance.swadisht_sweets_db.port
 }
 
-# 3. Upload a sample file (Object) to the S3 Bucket
-resource "aws_s3_object" "my_sample_file" {
-  bucket = aws_s3_bucket.my_digital_locker.id
-  key    = "documents/my_important_note.txt" # The "path" or name of the object in the bucket
-  source = "my_important_note.txt"           # Path to a local file to upload
-  # content_type = "text/plain" # Optional: S3 often infers this
-
-  # To make this object publicly readable (use with caution!):
-  # acl    = "public-read"
-  # Ensure your aws_s3_bucket_public_access_block settings allow this if you uncomment.
-
-  tags = {
-    Name = "SampleNoteFile"
-  }
-
-  # Ensure the local file exists before running terraform apply
-  # You can create a dummy file: `echo "Hello from Pratik's S3 Locker!" > my_important_note.txt`
-}
-
-# Output the S3 Bucket Name
-output "s3_bucket_name" {
-  description = "Name of the S3 bucket created"
-  value       = aws_s3_bucket.my_digital_locker.bucket
-}
-
-output "s3_bucket_domain_name" {
-  description = "Domain name of the S3 bucket (useful for website hosting, etc.)"
-  value       = aws_s3_bucket.my_digital_locker.bucket_domain_name
-}
-
-output "sample_file_s3_uri" {
-  description = "S3 URI of the uploaded sample file"
-  value       = "s3://${aws_s3_bucket.my_digital_locker.bucket}/${aws_s3_object.my_sample_file.key}"
-}
+# mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p
