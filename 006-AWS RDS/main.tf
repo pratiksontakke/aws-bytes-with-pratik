@@ -72,7 +72,7 @@ resource "aws_db_instance" "swadisht_sweets_db" {
   engine_version         = "8.0" # Check for latest supported versions
   instance_class         = "db.t3.micro" # Free tier eligible (check current eligibility)
   username               = "mrsharma"
-  password               = "pratik@123" # REPLACE with a strong password or use random_password.value
+  password               = "pratik123" # REPLACE with a strong password or use random_password.value
   # parameter_group_name = "default.mysql8.0" # Or a custom one
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
