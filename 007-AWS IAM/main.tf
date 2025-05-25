@@ -26,7 +26,7 @@ resource "aws_iam_group" "developers_group" {
 resource "aws_iam_user_group_membership" "rahul_in_developers" {
   user = aws_iam_user.developer_rahul.name
   groups = [
-    aws_iam_group.developers_group.name,
+    aws_iam_group.developers_group.name
   ]
 }
 

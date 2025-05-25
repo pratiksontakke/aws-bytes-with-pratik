@@ -8,13 +8,13 @@ provider "aws" {
 variable "ec2_instance_id_to_monitor" {
   description = "The ID of the EC2 instance to create an alarm for."
   type        = string
-  # default     = "i-xxxxxxxxxxxxxxxxx" # Replace with a real instance ID for testing
+  default     = "i-0640a142b092fa349" # Replace with a real instance ID for testing
 }
 
 variable "notification_email" {
   description = "Email address for alarm notifications."
   type        = string
-  # default     = "your-email@example.com" # Replace with your email
+  default     = "pratikTempMail@gmail.com" # Replace with your email
 }
 
 # 1. Create an SNS Topic for notifications
